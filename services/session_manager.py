@@ -1,6 +1,6 @@
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -11,6 +11,7 @@ class SessionData:
     chat_history: List[Dict[str, str]] = field(default_factory=list)
     last_diagnosis: Optional[Dict] = None
     request_timestamps: List[float] = field(default_factory=list)
+    image_analysis_timestamps: List[float] = field(default_factory=list)
     last_active: float = field(default_factory=time.time)
 
     def touch(self) -> None:
@@ -33,6 +34,21 @@ class SessionData:
             return False
         self.request_timestamps.append(now)
         return True
+
+    def can_analyse_image(self, daily_limit: int) -> Tuple[bool, Optional[float]]:
+        now = time.time()
+        day_seconds = 24 * 60 * 60
+        self.image_analysis_timestamps = [
+            t for t in self.image_analysis_timestamps if (now - t) < day_seconds
+        ]
+
+        if len(self.image_analysis_timestamps) >= daily_limit:
+            oldest_in_window = min(self.image_analysis_timestamps)
+            retry_after = oldest_in_window + day_seconds
+            return False, retry_after
+
+        self.image_analysis_timestamps.append(now)
+        return True, None
 
 
 class SessionManager:

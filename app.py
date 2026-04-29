@@ -1,5 +1,6 @@
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
+from datetime import datetime
 
 from config import settings
 from prompts import GUARDRAIL_REFUSAL
@@ -60,6 +61,15 @@ def create_app() -> Flask:
 
         try:
             if num_media > 0:
+                can_analyse, retry_after_ts = session.can_analyse_image(daily_limit=3)
+                if not can_analyse and retry_after_ts is not None:
+                    retry_at = datetime.fromtimestamp(retry_after_ts).strftime("%Y-%m-%d %I:%M %p")
+                    resp.message(
+                        f"Only three image analysis requests are allowed per day. "
+                        f"You can try again at {retry_at}."
+                    )
+                    return str(resp)
+
                 media_url = request.form.get("MediaUrl0", "")
                 media_type = request.form.get("MediaContentType0", "image/jpeg")
                 image_bytes = download_twilio_media(media_url)
