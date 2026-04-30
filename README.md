@@ -14,6 +14,7 @@ This project is a WhatsApp chatbot for plant-health support. It supports:
    - `TWILIO_ACCOUNT_SID`
    - `TWILIO_AUTH_TOKEN`
    - `GEMINI_API_KEY`
+   - Optional fallback keys: `GEMINI_FALLBACK_API_KEYS=key2,key3`
 
 Optional tuning in `.env`:
 - `SESSION_TTL_MINUTES=30`

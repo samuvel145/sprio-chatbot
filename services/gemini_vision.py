@@ -1,7 +1,7 @@
 import json
 import re
 from typing import Dict, Optional
-from services.gemini_client import build_model
+from services.gemini_client import generate_content_with_fallback
 from config import settings
 from prompts import VISION_PROMPT
 
@@ -19,14 +19,19 @@ def _extract_json(text: str) -> Optional[Dict]:
 
 
 def analyse_image(image_bytes: bytes, mime_type: str) -> Dict:
-    model = build_model(settings.vision_model, temperature=0.2, max_tokens=1200)
     image_part = {
         "inline_data": {
             "mime_type": mime_type,
             "data": __import__("base64").b64encode(image_bytes).decode("utf-8"),
         }
     }
-    response = model.generate_content([VISION_PROMPT, image_part], request_options={"timeout": 30})
+    response = generate_content_with_fallback(
+        model_name=settings.vision_model,
+        content=[VISION_PROMPT, image_part],
+        temperature=0.2,
+        max_tokens=1200,
+        request_options={"timeout": 30},
+    )
     parsed = _extract_json(response.text or "")
     if not parsed:
         return {"error": "parse_error"}

@@ -1,6 +1,7 @@
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from datetime import datetime
+import logging
 
 from config import settings
 from prompts import GUARDRAIL_REFUSAL
@@ -10,6 +11,7 @@ from services.gemini_chat import generate_reply
 from services.gemini_vision import analyse_image
 from utils.twilio_media import download_twilio_media
 
+logger = logging.getLogger(__name__)
 
 session_manager = SessionManager(
     ttl_minutes=settings.session_ttl_minutes,
@@ -105,6 +107,7 @@ def create_app() -> Flask:
             resp.message(reply)
             return str(resp)
         except Exception:
+            logger.exception("Unhandled error in /whatsapp route")
             resp.message("Temporary error while processing your request. Please try again.")
             return str(resp)
 

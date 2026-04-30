@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from typing import List
 from dotenv import load_dotenv
 
 
@@ -11,6 +12,7 @@ class Settings:
     twilio_account_sid: str = os.getenv("TWILIO_ACCOUNT_SID", "")
     twilio_auth_token: str = os.getenv("TWILIO_AUTH_TOKEN", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    gemini_fallback_api_keys: str = os.getenv("GEMINI_FALLBACK_API_KEYS", "")
 
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = int(os.getenv("PORT", "5000"))
@@ -28,6 +30,14 @@ class Settings:
     @property
     def max_image_size_bytes(self) -> int:
         return self.max_image_size_mb * 1024 * 1024
+
+    @property
+    def gemini_api_keys(self) -> List[str]:
+        keys = [self.gemini_api_key] if self.gemini_api_key else []
+        if self.gemini_fallback_api_keys:
+            fallback_keys = [k.strip() for k in self.gemini_fallback_api_keys.split(",") if k.strip()]
+            keys.extend(fallback_keys)
+        return keys
 
 
 settings = Settings()

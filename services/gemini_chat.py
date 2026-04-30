@@ -1,7 +1,10 @@
+import logging
 from typing import Dict, List, Optional
-from services.gemini_client import build_model
+from services.gemini_client import generate_content_with_fallback
 from config import settings
 from prompts import SYSTEM_PROMPT
+
+logger = logging.getLogger(__name__)
 
 
 def _build_system_prompt(last_diagnosis: Optional[Dict]) -> str:
@@ -23,7 +26,6 @@ def generate_reply(
     last_diagnosis: Optional[Dict] = None,
 ) -> str:
     system_prompt = _build_system_prompt(last_diagnosis)
-    model = build_model(settings.chat_model, temperature=0.6, max_tokens=700)
 
     contents = [{"role": "user", "parts": [{"text": system_prompt}]}]
     for msg in chat_history:
@@ -31,6 +33,19 @@ def generate_reply(
         contents.append({"role": role, "parts": [{"text": msg["content"]}]})
     contents.append({"role": "user", "parts": [{"text": user_message}]})
 
-    response = model.generate_content(contents, request_options={"timeout": 20})
-    text = (response.text or "").strip()
-    return text or "Please try again. I could not generate a response this time."
+    try:
+        response = generate_content_with_fallback(
+            model_name=settings.chat_model,
+            content=contents,
+            temperature=0.6,
+            max_tokens=700,
+            request_options={"timeout": 20},
+        )
+        text = (response.text or "").strip()
+        return text or "Please try again. I could not generate a response this time."
+    except Exception:
+        logger.exception("Chat generation failed.")
+        return (
+            "I am facing a temporary issue right now. "
+            "Please try again in a moment with your plant question."
+        )
